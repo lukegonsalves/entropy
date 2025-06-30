@@ -86,11 +86,25 @@ int main(int argc, char**argv ){
     int num_merges = 10;
     std::vector<int> mergetokens;
     std::vector<std::vector<int>> mergepairs;
-    while ( mergetokens.size() < num_merges ){
+    while ( mergetokens.size() < 2 ){
         auto max_t = *std::max_element(token.begin(), token.end());
-        tokens = merge(tokens, a, b, idx, )
+        std::cout << max_t.second << std::endl;
+        tokens = merge(tokens, 41, 52, max_t.second + 1, freq, mergepairs, mergetokens );
     }
-    
+
+
+    typedef std::pair<int, int> freqs;
+    // Now we need to measure the freq of each pair again, and get the next most freq pair
+    // So mergetokens -> mergepairs is the new mapping to apply.
+    std::priority_queue<freqs> tq;
+    for(auto out : freq ){
+        tq.push(out);
+    } 
+
+    while(!tq.empty()){ 
+        std::cout << tq.top().first << " | " << '{' << token[tq.top().second.substr(0,1)] << ", "<< token[tq.top().second.substr(1,1)] << "}" << std::endl;
+        tq.pop();
+    }
     // tokens = merge(tokens, a, b, max_t + 1);
     // for(auto out : alphabet){
     //     std::cout << out.first << " | " << out.second << std::endl;
