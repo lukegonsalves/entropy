@@ -11,32 +11,46 @@
 // std::string applyEmbedding(){
 
 // }
+struct tokenPair{
+    int first; 
+    int second; 
+    tokenPair(int a, int b): first(a), second(b) {}
+    bool operator==(const tokenPair& rhs) const {
+        return first == rhs.first && second == rhs.second;
+    }
+    bool operator<(const tokenPair& rhs) const {
+    return std::tie(first, second) < std::tie(rhs.first, rhs.second);
+}
 
-// merge, take the tokenised sequence {tokens}, replace any occurences of pair {a,b} with {idx};
-std::vector<int> merge(std::vector<int> &tokens, int a, int b , int idx, std::unordered_map<int, int>& freq, std::vector<std::vector<int>>& mergepairs, std::vector<int>& mergetokens){
-    std::vector<int> out;
-    int i = 0;
-    mergepairs.push_back({a, b}); // add the token merge pair to the new pair map
+};
+
+template<>
+struct std::hash<tokenPair>{
+    std::size_t operator() (const tokenPair& v) const{
+        return std::hash<int>()(v.first) ^ hash<int>()(v.second) << 1;
+    }
+};
+
+
+void encode();
+
+void decode();
+
+void merge(std::vector<int>& tokens, int a, int b, int idx, std::vector<int>& mergetokens, std::vector<std::pair<int, int>>& mergepairs){
+    mergepairs.push_back({a, b});
     mergetokens.push_back(idx);
-    while( i < tokens.size() ){
-        if( tokens[i] == a && tokens[i+1] == b && i < tokens.size() - 1 ){
-            out.push_back(idx);
-            i += 2;
-            freq[idx]++; // housekeeping on freq without rehashing.
-            freq[a]--;
-            freq[b]--;
-        }
-        else{
-            out.push_back(tokens[i]);
-            i++;
+
+    for(int i = 0; i < tokens.size() - 1; i++ ){
+        if ( tokens[i] == a && tokens[i+1] == b){
+            tokens.erase(tokens.begin()+i);
+            tokens[i] = idx;
         }
     }
-    return out;
-}
+};
 
 void printSeq(const std::vector<int>& tokens){
     for(int i = 0; i < tokens.size(); i++){
-        std::cout << tokens[i];
+        std::cout << tokens[i] <<" , ";
     }
     std::cout << std::endl;
 }
@@ -46,71 +60,53 @@ int main(int argc, char**argv ){
 
     std::string input = "This is a piece of text used to demonstrate Huffman encoding";
     std::cout << "total chars: " << input.size() << std::endl;
-    std::unordered_map<std::string, int> alphabet; // count the frequency of each 2 length string
-    std::unordered_map<int, int> freq; // token to frequency
-    std::unordered_map<std::string, int> token; // assign a token value to each character
-    std::unordered_map<int, std::string> rtoken; // for easy translation of token value back to each character 
 
-    for(int i = 0; i < input.size(); i++){
-        alphabet[input.substr(i,2)]++;
-        token[input.substr(i,1)] = i;
-        rtoken[i] = input.substr(i,1);
-        freq[i]++;
+    std::unordered_map<int, int> pairs;
+
+    std::vector<int> tokens;
+    for(int i = 0; i < input.size() - 1; i++){
+        tokens.push_back( (int) input[i]); 
+    }
+    int max_token = *max_element(tokens.begin(), tokens.end());
+    std::cout << "Max token in input seq: " << max_token << std::endl;
+    std::cout << "Pre-merge Token Seq: " << std::endl;
+    printSeq(tokens);
+
+    std::vector<int> mergetokens;
+    std::vector<std::pair<int, int>> mergepairs;
+
+    // Everything below here to be looped;
+    // Count the pairs.
+    std::unordered_map<tokenPair, int> freq;
+    for(int i = 0; i < tokens.size() - 1; i++){
+        freq[{tokens[i], tokens[i+1]}]++;
+    }
+
+    // To get the most freq; make a maxheap;
+    std::priority_queue<std::pair<int, tokenPair>> q;
+    for(auto ph : freq){
+        std::cout << "{" << ph.first.first << "," << ph.first.second <<  "} -> " << ph.second << ", ";
+        q.push({ph.second, {ph.first.first, ph.first.second}});
     }
     
-    typedef std::pair<int, std::string> freqs;
-
-    std::priority_queue<freqs> q;
-    for(auto out : alphabet ){
-        q.push({out.second, out.first});
-    } 
-
-    while(!q.empty()){ 
-        std::cout << q.top().first << " | " << '{' << token[q.top().second.substr(0,1)] << ", "<< token[q.top().second.substr(1,1)] << "}" << std::endl;
+    std::cout << "Stack output: " << std::endl;
+    std::pair<int, int> curr;
+    curr.first = q.top().second.first;
+    curr.second = q.top().second.second;
+    while( !q.empty() ){
+        std::cout << "{" << q.top().second.first << "," << q.top().second.second <<  "}: " << q.top().first << ", ";
         q.pop();
     }
 
-
-    // Create tokenised seq
-    std::cout << input << std::endl;
-    std::vector<int> tokens;
-    for(int i = 0; i < input.size(); i++){
-        tokens.push_back(token[input.substr(i, 1)]);
-        std::cout << tokens[i] << ", ";
-    }
-
+    merge(tokens, curr.first, curr.second, max_token + 1, mergetokens, mergepairs);
+    std::cout << "Post-merge Token Seq: " << std::endl;
     printSeq(tokens);
-    // std::vector<int> randomList = {1, 2, 3, 4, 5};
-    // randomList = merge(randomList, 4, 5, 99);
-    // printSeq(randomList);
-    int num_merges = 10;
-    std::vector<int> mergetokens;
-    std::vector<std::vector<int>> mergepairs;
-    while ( mergetokens.size() < 2 ){
-        auto max_t = *std::max_element(token.begin(), token.end());
-        std::cout << max_t.second << std::endl;
-        tokens = merge(tokens, 41, 52, max_t.second + 1, freq, mergepairs, mergetokens );
+    std::cout << "token seq length: " << tokens.size() << std::endl; 
+
+    // Print mapping {a, b} -> c 
+    for(int i = 0; i < mergepairs.size(); i++){
+        std::cout << "{" << mergepairs[i].first << "," << mergepairs[i].second <<  "} -> " << mergetokens[i] << std::endl;
     }
-
-
-    typedef std::pair<int, int> freqs;
-    // Now we need to measure the freq of each pair again, and get the next most freq pair
-    // So mergetokens -> mergepairs is the new mapping to apply.
-    std::priority_queue<freqs> tq;
-    for(auto out : freq ){
-        tq.push(out);
-    } 
-
-    while(!tq.empty()){ 
-        std::cout << tq.top().first << " | " << '{' << token[tq.top().second.substr(0,1)] << ", "<< token[tq.top().second.substr(1,1)] << "}" << std::endl;
-        tq.pop();
-    }
-    // tokens = merge(tokens, a, b, max_t + 1);
-    // for(auto out : alphabet){
-    //     std::cout << out.first << " | " << out.second << std::endl;
-    // }
-
-
 }
 
 // Huffman encoding
