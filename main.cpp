@@ -72,7 +72,7 @@ void printSeq(const std::vector<int>& tokens){
 
 int main(int argc, char**argv ){
 
-    std::string input = "This is a piece of text used to demonstrate Huffman encoding";
+    std::string input = "This is a piece of text used to demonstrate Huffman encoding. Shannon's first theorem, the source coding theorem says that the average bits per symbol B can encode a souurce of entropy H(z).";
     std::cout << "total chars: " << input.size() << std::endl;
 
     std::unordered_map<int, int> pairs;
