@@ -34,7 +34,21 @@ struct std::hash<tokenPair>{
 
 void encode();
 
-void decode();
+std::string decode(std::vector<int>& tokens, std::vector<std::pair<int, int>>& mergepairs, std::vector<int> mergetokens){
+    // traverse the mergepairs -> mergetokens backwards.
+    for(int i = mergetokens.size() - 1; i >= 0; i--){
+        for(int j = 0; j < tokens.size(); j++)
+        if( tokens[j] == mergetokens[i] ){
+            tokens[j] = mergepairs[i].first;
+            tokens.insert(tokens.begin() + j + 1, mergepairs[i].second);
+        }
+    }
+    std::string out;
+    for(int i = 0; i < tokens.size(); i++){
+        out.append(1, (char) tokens[i]);
+    }
+    return out;
+}
 
 void merge(std::vector<int>& tokens, int a, int b, int idx, std::vector<int>& mergetokens, std::vector<std::pair<int, int>>& mergepairs){
     mergepairs.push_back({a, b});
@@ -76,7 +90,7 @@ int main(int argc, char**argv ){
 
     // Everything below here to be looped;
     int merge_count = 0;
-    while( merge_count < 10 ){
+    while( merge_count < 20 ){
         int max_token = *max_element(tokens.begin(), tokens.end());
         std::cout << "Max token in input seq: " << max_token << std::endl;
         // Count the pairs.
@@ -115,6 +129,8 @@ int main(int argc, char**argv ){
     for(int i = 0; i < mergepairs.size(); i++){
         std::cout << "{" << mergepairs[i].first << "," << mergepairs[i].second <<  "} -> " << mergetokens[i] << std::endl;
     }
+
+    std::cout << decode(tokens, mergepairs, mergetokens) << std::endl;
 }
 
 // Huffman encoding
